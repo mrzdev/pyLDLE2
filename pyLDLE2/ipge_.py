@@ -14,7 +14,7 @@ class IPGE:
         d = opts['d']
 
         n, N = opts['phi'].shape
-        print_freq = np.int(n*print_prop)
+        print_freq = int(n*print_prop)
 
         # Compute G
         t = 0.5*((epsilon**2)/chi2.ppf(p, df=d))
@@ -43,7 +43,7 @@ class IPGE:
 
     def compute_gradient_using_LLR(self, X, phi, d_e, U, t, d, print_prop = 0.25):
         n,p = X.shape
-        print_freq = np.int(n*print_prop)
+        print_freq = int(n*print_prop)
         N = phi.shape[1]
         grad_phi = np.zeros((n,N,p))
 
@@ -89,7 +89,7 @@ class IPGE:
 
     def compute_Atilde_LDLE_2(X, L, phi0, phi, lmbda0, lmbda, d_e, U, epsilon, p, d, autotune, print_prop = 0.25):
         n, N = phi.shape
-        print_freq = np.int(n*print_prop)
+        print_freq = int(n*print_prop)
 
         L = L.copy()
         L = L/(autotune.toarray()+1e-12)
@@ -109,7 +109,7 @@ class IPGE:
 
     def llr(self, X, phi, d_e, U, epsilon, p, d, print_prop = 0.25):
         n, N = phi.shape
-        print_freq = np.int(n*print_prop)
+        print_freq = int(n*print_prop)
 
         # t = 0.5*((epsilon**2)/chi2.ppf(p, df=d))
         t = 0.5*((epsilon**2)*chi2.ppf(p, df=d))
@@ -128,7 +128,7 @@ class IPGE:
 
     def compute_Atilde_LDLE_3(X, L, phi0, phi, lmbda0, lmbda, d_e, U, epsilon, p, d, autotune, print_prop = 0.25):
         n, N = phi.shape
-        print_freq = np.int(n*print_prop)
+        print_freq = int(n*print_prop)
         Atilde=np.zeros((n,N,N))
 
         temp1 = np.dot(lmbda*phi, phi.T)
