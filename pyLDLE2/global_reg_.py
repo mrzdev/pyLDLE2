@@ -1,5 +1,6 @@
 import pdb
 import numpy as np
+from numba import njit
 import time
 
 from .util_ import procrustes, issparse, sparse_matrix, nearest_neighbors
@@ -134,7 +135,8 @@ def procrustes_init(seq, rho, y, is_visited_view, d, Utilde, n_Utilde_Utilde,
         y[C_s,:] = intermed_param.eval_({'view_index': s, 'data_mask': C_s})
     return y, is_visited_view
 
-def compute_Lpinv_helpers(W):
+@njit(fastmath=True, cache=True, nogil=True)
+def lpinv_nb(W):
     M, n = W.shape
     # B_ = W.copy().transpose().astype('int')
     B_ = W.copy().transpose().astype('float')
@@ -142,11 +144,8 @@ def compute_Lpinv_helpers(W):
     D_2 = np.asarray(B_.sum(axis=0))
     D_1_inv_sqrt = np.sqrt(1/D_1)
     D_2_inv_sqrt = np.sqrt(1/D_2)
-    B_tilde = B_.multiply(D_2_inv_sqrt).multiply(D_1_inv_sqrt)
-    # TODO: U12 is dense of size nxM
-    print('Computing svd', flush=True)
-    U12,SS,VT = scipy.linalg.svd(B_tilde.todense(), full_matrices=False)
-    print('Done', flush=True)
+    B_tilde = B_ * D_2_inv_sqrt[np.newaxis, :] * D_1_inv_sqrt[:, np.newaxis]
+    U12,SS,VT = np.linalg.svd(B_tilde, full_matrices=False)
     # U12,SS,VT = slinalg.svds(B_tilde, k=M, solver='propack')
     V = VT.T
     mask = np.abs(SS-1)<1e-6
@@ -158,7 +157,20 @@ def compute_Lpinv_helpers(W):
     U2 = U12[:,m_1:]
     V1 = V[:,:m_1]
     V2 = V[:,m_1:]
-    return [D_1_inv_sqrt, D_2_inv_sqrt, U1, U2, V1, V2, Sigma_1, Sigma_2]
+    return (D_1_inv_sqrt[:, np.newaxis], 
+            D_2_inv_sqrt[np.newaxis, :], 
+            U1, 
+            U2, 
+            V1, 
+            V2, 
+            Sigma_1, 
+            Sigma_2)
+
+def compute_Lpinv_helpers(W):
+    print('Computing svd', flush=True)
+    ret = lpinv_nb(W.toarray())
+    print('Done', flush=True)
+    return ret
 
 def compute_Lpinv_MT(Lpinv_helpers, B):
     D_1_inv_sqrt, D_2_inv_sqrt, U1, U2, V1, V2, Sigma_1, Sigma_2 = Lpinv_helpers
